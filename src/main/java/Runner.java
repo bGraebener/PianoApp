@@ -1,9 +1,32 @@
 import com.leapmotion.leap.*;
 
+import javax.sound.midi.*;
+import java.util.*;
 import java.io.IOException;
 
 public class Runner {
-    public static void main(final String[] args) {
+    public static void main(final String[] args) throws Exception {
+        System.out.println(Arrays.toString(MidiSystem.getMidiDeviceInfo()));
+
+        final MidiDevice midiDevice = MidiSystem.getMidiDevice(MidiSystem.getMidiDeviceInfo()[6]);
+        midiDevice.open();
+        System.out.println(midiDevice.getDeviceInfo());
+        final Receiver receiver = midiDevice.getReceiver();
+
+        final Scanner scanner = new Scanner(System.in);
+
+        String note;
+        do {
+            note = scanner.nextLine();
+
+            switch (note) {
+                case "a":
+
+            }
+        } while (!note.equals("q"));
+
+        Runner.sendMessage(receiver);
+
         final Controller c;
         if (NativeLibrary.loadSystem("native")) {
             final Listener l = new Listener() {
@@ -46,5 +69,14 @@ public class Runner {
         }
 
 
+    }
+
+    private static void sendMessage(final Receiver receiver) throws InvalidMidiDataException {
+        final ShortMessage myMsg = new ShortMessage();
+        // Start playing the note Middle C (60),
+        // moderately loud (velocity = 93).
+        myMsg.setMessage(ShortMessage.NOTE_ON, 0, 60, 93);
+        final long timeStamp = -1;
+        receiver.send(myMsg, timeStamp);
     }
 }
