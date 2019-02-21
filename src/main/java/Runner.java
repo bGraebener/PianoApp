@@ -5,15 +5,20 @@ import java.util.*;
 import java.io.IOException;
 
 public class Runner {
+    private static int oldNote = 0;
+
     public static void main(final String[] args) throws Exception {
-        System.out.println(Arrays.toString(MidiSystem.getMidiDeviceInfo()));
+        final MidiDevice.Info[] midiDeviceInfo = MidiSystem.getMidiDeviceInfo();
+        System.out.println(Arrays.toString(midiDeviceInfo));
 
-        final MidiDevice midiDevice = MidiSystem.getMidiDevice(MidiSystem.getMidiDeviceInfo()[6]);
+        final MidiDevice.Info pianoAppMidiDriver = Arrays.stream(midiDeviceInfo)
+                .filter(mdi -> mdi.toString().equals("PianoApp")).skip(1).findFirst().orElseThrow(RuntimeException::new);
+
+        MidiDevice midiDevice = MidiSystem.getMidiDevice(pianoAppMidiDriver);
         midiDevice.open();
-        System.out.println(midiDevice.getDeviceInfo());
-        final Receiver receiver = midiDevice.getReceiver();
+        Receiver receiver = midiDevice.getReceiver();
 
-        final Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in);
 
         String note;
         do {
@@ -21,11 +26,18 @@ public class Runner {
 
             switch (note) {
                 case "a":
-
+                    sendMessage(receiver, 69);
+                    break;
+                case "c":
+                    sendMessage(receiver, 60);
+                    break;
+                case "d":
+                    sendMessage(receiver, 62);
+                    break;
+                default:
+                    sendMessage(receiver, 64);
             }
         } while (!note.equals("q"));
-
-        Runner.sendMessage(receiver);
 
         final Controller c;
         if (NativeLibrary.loadSystem("native")) {
@@ -68,15 +80,20 @@ public class Runner {
             System.out.println("Leap Native is not loaded");
         }
 
-
     }
 
-    private static void sendMessage(final Receiver receiver) throws InvalidMidiDataException {
-        final ShortMessage myMsg = new ShortMessage();
+    private static void sendMessage(Receiver receiver, int note) throws InvalidMidiDataException {
+        ShortMessage myMsg = new ShortMessage();
+        long timeStamp = -1;
+
+        //stop old note from playing
+        myMsg.setMessage(ShortMessage.NOTE_OFF, 0, oldNote, 0);
+        receiver.send(myMsg, timeStamp);
+        oldNote = note;
+
         // Start playing the note Middle C (60),
         // moderately loud (velocity = 93).
-        myMsg.setMessage(ShortMessage.NOTE_ON, 0, 60, 93);
-        final long timeStamp = -1;
+        myMsg.setMessage(ShortMessage.NOTE_ON, 0, note, 93);
         receiver.send(myMsg, timeStamp);
     }
 }
