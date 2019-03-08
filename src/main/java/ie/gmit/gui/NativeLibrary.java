@@ -1,12 +1,14 @@
+package ie.gmit.gui;
+
 import java.io.File;
 import java.lang.reflect.Field;
 
 /**
- * The <code>NativeLibrary</code> class contains several useful methods to load
+ * The <code>ie.gmit.gui.NativeLibrary</code> class contains several useful methods to load
  * dynamic libraries when the program starts, even if they are not in
  * "java.library.path".
  *
- * @Source: http://ruzman.de/res/java/de/ruzman/leap/NativeLibrary.java
+ * @Source: http://ruzman.de/res/java/de/ruzman/leap/ie.gmit.gui.NativeLibrary.java
  */
 public final class NativeLibrary {
     /**
