@@ -1,15 +1,17 @@
 package ie.gmit.gui;
 
 import com.leapmotion.leap.*;
-/*import com.leapmotion.leap.Image;
+//import com.leapmotion.leap.Image;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.image.BufferedImage;*/
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class LeapMotionListener extends Listener {
     private Consumer keyTapListener = null;
+    private Consumer fingerMoveListener = null;
 /*
     CamPanel cp = new CamPanel();
     CamPanel cp2 = new CamPanel();*/
@@ -67,18 +69,31 @@ public class LeapMotionListener extends Listener {
                 }
             }
         }*/
+        //System.out.println(frame.interactionBox().width());
+        final Map<Character, List<Vector>> hands = new HashMap<>();
+        frame.hands().forEach((h) -> {
+            final char side = h.isLeft() ? 'L' : 'R';
+            if (hands.get(side) == null) {
+                hands.put(side, new ArrayList<>());
+            }
+            h.fingers().forEach((f) ->
+                    hands.get(side).add(f.bone(Bone.Type.TYPE_DISTAL).center())
+            );
+
+        });
+        if (this.fingerMoveListener != null) {
+            this.fingerMoveListener.accept(hands);
+        }
 
         //System.out.println(frame.gestures().count());
         frame.gestures().forEach((g) -> {
             if (g.type() == Gesture.Type.TYPE_KEY_TAP) {
                 final KeyTapGesture ktp = new KeyTapGesture(g);
-                final Vector pos = ktp.position();
-                System.out.println("Tapped at: " + pos.getX() + "  " + pos.getY());
+                final Finger finger = new Finger(ktp.pointable());
                 if (this.keyTapListener != null) {
-                    this.keyTapListener.accept(pos);
+                    this.keyTapListener.accept(finger.bone(Bone.Type.TYPE_DISTAL).center());
                 }
             }
-            System.out.println("Gesture name:" + g.type().name());
         });
     }
 
@@ -89,6 +104,15 @@ public class LeapMotionListener extends Listener {
      */
     public void onKeyTap(final Consumer<? extends Vector> c) {
         this.keyTapListener = c;
+    }
+
+    /**
+     * Register a listener for finger move
+     *
+     * @param c
+     */
+    public void onFingerMove(final Consumer<? extends Map<Character, List<Vector>>> c) {
+        this.fingerMoveListener = c;
     }
 
 }

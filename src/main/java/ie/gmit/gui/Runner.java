@@ -16,6 +16,10 @@ import java.util.Scanner;
 
 public class Runner {
     private static int oldNote = 0;
+    //The distance to detect the fingers between. Its is -DETECT <> DETECT
+    private static final int DETECT = 150;
+    //The number of keys on the piano
+    private static final int KEYS = 12;
 
     public static void main(final String[] args) throws Exception {
         final MidiDevice.Info[] midiDeviceInfo = MidiSystem.getMidiDeviceInfo();
@@ -51,11 +55,16 @@ public class Runner {
 
         if (NativeLibrary.loadSystem("native")) {
             final Controller c = new Controller();
+
             final LeapMotionListener l = new LeapMotionListener();
             c.addListener(l);
-
+            //Register to finger movement
+            l.onFingerMove((hands) -> {
+                //System.out.println("Right middle finger is at: " + hands.get('R').get(3).getX());
+            });
+            //Register to key tap
             l.onKeyTap((pos) -> {
-                System.out.println("External listener is called");
+                System.out.println("Tapped at: " + pos.getX() + "->" + Runner.whichKey(pos.getX()));
             });
             // Keep this process running until Enter is pressed
             try {
@@ -69,6 +78,32 @@ public class Runner {
         }
 
 
+    }
+
+    /**
+     * Determines which key has been pressed.
+     * X coordinate is generally between -150 and 150
+     * Returns -1 if a key was not pressed.
+     *
+     * @param x
+     * @return
+     */
+    private static int whichKey(final float x) {
+        final int keyWidth = Runner.DETECT * 2 / Runner.KEYS;
+        int baseX = -Runner.DETECT;
+        int i = 1;
+        //Check if within bounds
+        if (-Runner.DETECT <= x && x <= Runner.DETECT) {
+            //Loop from left to right
+            while (baseX <= Runner.DETECT) {
+                if ((x <= baseX && x >= baseX + keyWidth) || (x >= baseX && x <= baseX + keyWidth)) {
+                    return i;
+                }
+                baseX += keyWidth;
+                i++;
+            }
+        }
+        return -1;
     }
 
 
