@@ -1,70 +1,58 @@
 package ie.gmit.gui;
 
-import com.leapmotion.leap.*;
-import com.leapmotion.leap.Frame;
-import com.leapmotion.leap.Image;
-import com.leapmotion.leap.Vector;
+import com.leapmotion.leap.Controller;
 
 import javax.sound.midi.*;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Scanner;
 
 
 public class Runner {
     private static int oldNote = 0;
     //The distance to detect the fingers between. Its is -DETECT <> DETECT
-    private static final int DETECT = 150;
+    private static final int DETECT = 175;
     //The number of keys on the piano
     private static final int KEYS = 12;
+
+    private static final int STARTNOTE = 59;
 
     public static void main(final String[] args) throws Exception {
         final MidiDevice.Info[] midiDeviceInfo = MidiSystem.getMidiDeviceInfo();
         System.out.println(Arrays.toString(midiDeviceInfo));
 
         final MidiDevice.Info pianoAppMidiDriver = Arrays.stream(midiDeviceInfo)
-                .filter(mdi -> mdi.toString().equals("PianoApp")).skip(1).findFirst().orElseThrow(RuntimeException::new);
+                .filter(mdi -> mdi.toString().equals("PianoApp")).findFirst().orElseThrow(RuntimeException::new);
 
         final MidiDevice midiDevice = MidiSystem.getMidiDevice(pianoAppMidiDriver);
         midiDevice.open();
         final Receiver receiver = midiDevice.getReceiver();
-
-        final Scanner scanner = new Scanner(System.in);
-
-        String note;
-        do {
-            note = scanner.nextLine();
-
-            switch (note) {
-                case "a":
-                    Runner.sendMessage(receiver, 69);
-                    break;
-                case "c":
-                    Runner.sendMessage(receiver, 60);
-                    break;
-                case "d":
-                    Runner.sendMessage(receiver, 62);
-                    break;
-                default:
-                    Runner.sendMessage(receiver, 64);
-            }
-        } while (!note.equals("q"));
-
+        //Load leap motion native files
         if (NativeLibrary.loadSystem("native")) {
             final Controller c = new Controller();
-
             final LeapMotionListener l = new LeapMotionListener();
             c.addListener(l);
+
             //Register to finger movement
             l.onFingerMove((hands) -> {
+                //Get left hand
+                hands.get('L').forEach((finger) -> {
+                    //System.out.println(Runner.whichKey(finger.getX()));
+                });
                 //System.out.println("Right middle finger is at: " + hands.get('R').get(3).getX());
             });
             //Register to key tap
             l.onKeyTap((pos) -> {
-                System.out.println("Tapped at: " + pos.getX() + "->" + Runner.whichKey(pos.getX()));
+                //Get the key tapped
+                final int key = Runner.whichKey(pos.getX());
+                if (key > 0 && key < Runner.KEYS) {
+                    try {
+                        //Play sound
+                        Runner.sendMessage(receiver, key + Runner.STARTNOTE);
+                    } catch (final InvalidMidiDataException e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("Tapped at: " + pos.getX() + "->" + Runner.whichKey(pos.getX()));
+                }
             });
             // Keep this process running until Enter is pressed
             try {

@@ -21,6 +21,7 @@ public class LeapMotionListener extends Listener {
         System.out.println("Connected");
         //Setup the controller for Key Tap gestures and image projection
         controller.enableGesture(Gesture.Type.TYPE_KEY_TAP);
+        controller.enableGesture(Gesture.Type.TYPE_SWIPE);
         controller.setPolicy(Controller.PolicyFlag.POLICY_IMAGES);
         controller.config().setFloat("Gesture.KeyTap.MinDownVelocity", 40.0f);
         controller.config().setFloat("Gesture.KeyTap.HistorySeconds", .2f);
@@ -93,6 +94,8 @@ public class LeapMotionListener extends Listener {
                 if (this.keyTapListener != null) {
                     this.keyTapListener.accept(finger.bone(Bone.Type.TYPE_DISTAL).center());
                 }
+            }else if(g.type() == Gesture.Type.TYPE_SWIPE){
+                //System.out.println("Swiped");
             }
         });
     }
