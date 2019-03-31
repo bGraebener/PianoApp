@@ -1,11 +1,14 @@
 package ie.gmit.gui;
 
 import com.leapmotion.leap.Controller;
+import com.leapmotion.leap.Frame;
+import com.leapmotion.leap.Gesture;
 
 import javax.sound.midi.*;
 import java.io.IOException;
 import java.util.Arrays;
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Runner {
     private static int oldNote = 0;
@@ -14,14 +17,14 @@ public class Runner {
     //The number of keys on the piano
     private static final int KEYS = 12;
 
-    private static final int STARTNOTE = 59;
+    private static int STARTNOTE = 59;
 
     public static void main(final String[] args) throws Exception {
         final MidiDevice.Info[] midiDeviceInfo = MidiSystem.getMidiDeviceInfo();
         System.out.println(Arrays.toString(midiDeviceInfo));
 
         final MidiDevice.Info pianoAppMidiDriver = Arrays.stream(midiDeviceInfo)
-                .filter(mdi -> mdi.toString().equals("PianoApp")).findFirst().orElseThrow(RuntimeException::new);
+                .filter(mdi -> mdi.toString().equals("PianoApp")).skip(1).findFirst().orElseThrow(RuntimeException::new);
 
         final MidiDevice midiDevice = MidiSystem.getMidiDevice(pianoAppMidiDriver);
         midiDevice.open();
@@ -32,14 +35,30 @@ public class Runner {
             final LeapMotionListener l = new LeapMotionListener();
             c.addListener(l);
 
+            c.enableGesture(Gesture.Type.TYPE_SWIPE);
+
             //Register to finger movement
             l.onFingerMove((hands) -> {
+
+//                final Frame frame = c.frame();
+//                frame.gestures().forEach(g ->
+//                        {
+//                            if (g.type() == Gesture.Type.TYPE_SWIPE) {
+//                                System.out.println("Swipe");
+////                                System.out.println(((SwipeGesture)g).speed());
+//                                Runner.STARTNOTE += 12;
+//                                System.out.println(Runner.STARTNOTE);
+//                            }
+//                        }
+//                );
+
                 //Get left hand
                 hands.get('L').forEach((finger) -> {
                     //System.out.println(Runner.whichKey(finger.getX()));
                 });
                 //System.out.println("Right middle finger is at: " + hands.get('R').get(3).getX());
             });
+
             //Register to key tap
             l.onKeyTap((pos) -> {
                 //Get the key tapped
@@ -54,6 +73,7 @@ public class Runner {
                     System.out.println("Tapped at: " + pos.getX() + "->" + Runner.whichKey(pos.getX()));
                 }
             });
+
             // Keep this process running until Enter is pressed
             try {
                 System.in.read();
@@ -64,7 +84,6 @@ public class Runner {
         } else {
             System.out.println("Leap Native is not loaded");
         }
-
 
     }
 
@@ -94,15 +113,24 @@ public class Runner {
         return -1;
     }
 
-
     private static void sendMessage(final Receiver receiver, final int note) throws InvalidMidiDataException {
         final ShortMessage myMsg = new ShortMessage();
         final long timeStamp = -1;
 
-        //stop old note from playing
-        myMsg.setMessage(ShortMessage.NOTE_OFF, 0, Runner.oldNote, 0);
-        receiver.send(myMsg, timeStamp);
-        Runner.oldNote = note;
+        ExecutorService service = Executors.newFixedThreadPool(1);
+        service.submit(() -> {
+
+            try {
+                Thread.sleep(1000);
+                //stop old note from playing
+                myMsg.setMessage(ShortMessage.NOTE_OFF, 0, Runner.oldNote, 0);
+                receiver.send(myMsg, timeStamp);
+                Runner.oldNote = note;
+            } catch (InterruptedException | InvalidMidiDataException e) {
+                e.printStackTrace();
+            }
+
+        });
 
         // Start playing the note Middle C (60),
         // moderately loud (velocity = 93).
