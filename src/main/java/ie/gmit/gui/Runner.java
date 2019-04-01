@@ -6,7 +6,6 @@ import com.leapmotion.leap.Gesture;
 
 import javax.sound.midi.*;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,21 +15,39 @@ public class Runner {
     private static final int DETECT = 175;
     //The number of keys on the piano
     private static final int KEYS = 12;
-
-    private static int STARTNOTE = 59;
+    //The start note which allocates to the first key
+    private static final int STARTNOTE = 59;
 
     public static void main(final String[] args) throws Exception {
         final MidiDevice.Info[] midiDeviceInfo = MidiSystem.getMidiDeviceInfo();
-        System.out.println(Arrays.toString(midiDeviceInfo));
+        MidiDevice midiDevice;
+        Receiver receiver = null;
+        //Loop each rdevice info
+        for (final MidiDevice.Info i : midiDeviceInfo) {
+            //Find piano app
+            if (i.toString().equals(("PianoApp"))) {
+                //Try to get the receiver
+                try {
+                    midiDevice = MidiSystem.getMidiDevice(i);
+                    midiDevice.open();
+                    receiver = midiDevice.getReceiver();
+                    break;
+                } catch (final Exception e) {
 
-        final MidiDevice.Info pianoAppMidiDriver = Arrays.stream(midiDeviceInfo)
-                .filter(mdi -> mdi.toString().equals("PianoApp")).skip(1).findFirst().orElseThrow(RuntimeException::new);
+                }
+            }
+        }
+        //Exit if receiver was not found
+        if (receiver == null) {
+            System.out.println("Could not load mid driver");
+            System.exit(0);
+        }
+        //Finalise the receiver for lambda
+        final Receiver finalReceiver = receiver;
 
-        final MidiDevice midiDevice = MidiSystem.getMidiDevice(pianoAppMidiDriver);
-        midiDevice.open();
-        final Receiver receiver = midiDevice.getReceiver();
         //Load leap motion native files
-        if (NativeLibrary.loadSystem("native")) {
+        if (NativeLibraryLoader.loadNativeFiles()) {
+            //if (NativeLibrary.loadSystem("native")) {
             final Controller c = new Controller();
             final LeapMotionListener l = new LeapMotionListener();
             c.addListener(l);
@@ -66,11 +83,11 @@ public class Runner {
                 if (key > 0 && key < Runner.KEYS) {
                     try {
                         //Play sound
-                        Runner.sendMessage(receiver, key + Runner.STARTNOTE);
+                        Runner.sendMessage(finalReceiver, key + Runner.STARTNOTE);
                     } catch (final InvalidMidiDataException e) {
                         e.printStackTrace();
                     }
-                    System.out.println("Tapped at: " + pos.getX() + "->" + Runner.whichKey(pos.getX()));
+                    System.out.println("Key tapped: " + Runner.whichKey(pos.getX()));
                 }
             });
 
@@ -117,7 +134,7 @@ public class Runner {
         final ShortMessage myMsg = new ShortMessage();
         final long timeStamp = -1;
 
-        ExecutorService service = Executors.newFixedThreadPool(1);
+        final ExecutorService service = Executors.newFixedThreadPool(1);
         service.submit(() -> {
 
             try {
@@ -126,7 +143,7 @@ public class Runner {
                 myMsg.setMessage(ShortMessage.NOTE_OFF, 0, Runner.oldNote, 0);
                 receiver.send(myMsg, timeStamp);
                 Runner.oldNote = note;
-            } catch (InterruptedException | InvalidMidiDataException e) {
+            } catch (final InterruptedException | InvalidMidiDataException e) {
                 e.printStackTrace();
             }
 
