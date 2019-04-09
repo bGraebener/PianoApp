@@ -1,9 +1,5 @@
 package ie.gmit.gui;
 
-import com.leapmotion.leap.Controller;
-import com.leapmotion.leap.Frame;
-import com.leapmotion.leap.Gesture;
-
 import javax.sound.midi.*;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -11,17 +7,19 @@ import java.util.concurrent.Executors;
 
 public class Runner {
     private static int oldNote = 0;
-    //The distance to detect the fingers between. Its is -DETECT <> DETECT
-    private static final int DETECT = 175;
-    //The number of keys on the piano
-    private static final int KEYS = 12;
     //The start note which allocates to the first key
-    private static final int STARTNOTE = 59;
+    private final int startNote = 59;
+    private Receiver midiReceiver;
 
-    public static void main(final String[] args) throws Exception {
+    /**
+     * Sets up a midi receiver and the leap motion key tap
+     *
+     * @param args
+     */
+    private Runner(final String[] args) {
         final MidiDevice.Info[] midiDeviceInfo = MidiSystem.getMidiDeviceInfo();
         MidiDevice midiDevice;
-        Receiver receiver = null;
+        this.midiReceiver = null;
         //Loop each rdevice info
         for (final MidiDevice.Info i : midiDeviceInfo) {
             //Find piano app
@@ -30,104 +28,51 @@ public class Runner {
                 try {
                     midiDevice = MidiSystem.getMidiDevice(i);
                     midiDevice.open();
-                    receiver = midiDevice.getReceiver();
+                    this.midiReceiver = midiDevice.getReceiver();
                     break;
                 } catch (final Exception e) {
 
                 }
             }
         }
-        //Exit if receiver was not found
-        if (receiver == null) {
-            System.out.println("Could not load mid driver");
-            System.exit(0);
-        }
-        //Finalise the receiver for lambda
-        final Receiver finalReceiver = receiver;
 
-        //Load leap motion native files
-        if (NativeLibraryLoader.loadNativeFiles()) {
-            //if (NativeLibrary.loadSystem("native")) {
-            final Controller c = new Controller();
-            final LeapMotionListener l = new LeapMotionListener();
-            c.addListener(l);
-
-            c.enableGesture(Gesture.Type.TYPE_SWIPE);
-
-            //Register to finger movement
-            l.onFingerMove((hands) -> {
-
-//                final Frame frame = c.frame();
-//                frame.gestures().forEach(g ->
-//                        {
-//                            if (g.type() == Gesture.Type.TYPE_SWIPE) {
-//                                System.out.println("Swipe");
-////                                System.out.println(((SwipeGesture)g).speed());
-//                                Runner.STARTNOTE += 12;
-//                                System.out.println(Runner.STARTNOTE);
-//                            }
-//                        }
-//                );
-
-                //Get left hand
-                hands.get('L').forEach((finger) -> {
-                    //System.out.println(Runner.whichKey(finger.getX()));
-                });
-                //System.out.println("Right middle finger is at: " + hands.get('R').get(3).getX());
-            });
-
-            //Register to key tap
-            l.onKeyTap((pos) -> {
-                //Get the key tapped
-                final int key = Runner.whichKey(pos.getX());
-                if (key > 0 && key < Runner.KEYS) {
-                    try {
-                        //Play sound
-                        Runner.sendMessage(finalReceiver, key + Runner.STARTNOTE);
-                    } catch (final InvalidMidiDataException e) {
-                        e.printStackTrace();
-                    }
-                    System.out.println("Key tapped: " + Runner.whichKey(pos.getX()));
-                }
-            });
-
-            // Keep this process running until Enter is pressed
-            try {
-                System.in.read();
-            } catch (final IOException e) {
-                e.printStackTrace();
+        try {
+            //Exit if receiver was not found
+            if (this.midiReceiver == null) {
+                throw new IOException("Could not load midi driver");
             }
-            c.removeListener(l);
-        } else {
-            System.out.println("Leap Native is not loaded");
+            // Try to setup leap motion
+            this.setUpOnTapListener();
+        } catch (final IOException e) {
+            //Exit with a message if the midi receiver could not be set or the leap motion listener could not be registered
+            System.out.println(e.getMessage());
+            System.exit(0);
         }
 
     }
 
     /**
-     * Determines which key has been pressed.
-     * X coordinate is generally between -150 and 150
-     * Returns -1 if a key was not pressed.
+     * Initialises Leap Motion and sets up the key tap listener
      *
-     * @param x
-     * @return
+     * @throws IOException
      */
-    private static int whichKey(final float x) {
-        final int keyWidth = Runner.DETECT * 2 / Runner.KEYS;
-        int baseX = -Runner.DETECT;
-        int i = 1;
-        //Check if within bounds
-        if (-Runner.DETECT <= x && x <= Runner.DETECT) {
-            //Loop from left to right
-            while (baseX <= Runner.DETECT) {
-                if ((x <= baseX && x >= baseX + keyWidth) || (x >= baseX && x <= baseX + keyWidth)) {
-                    return i;
+    private void setUpOnTapListener() throws IOException {
+        //Initialise leap motion
+        final LeapMotionInitialiser lmi = new LeapMotionInitialiser();
+        //Register to key tap
+        lmi.onKeyTap((pos) -> {
+            //Get the key tapped
+            final int key = lmi.whichKey(pos.getX());
+            if (key > 0 && key < lmi.getNumberOfKeys()) {
+                try {
+                    //Play sound
+                    Runner.sendMessage(this.midiReceiver, key + this.startNote);
+                } catch (final InvalidMidiDataException e) {
+                    e.printStackTrace();
                 }
-                baseX += keyWidth;
-                i++;
+                System.out.println("Key tapped: " + key);
             }
-        }
-        return -1;
+        });
     }
 
     private static void sendMessage(final Receiver receiver, final int note) throws InvalidMidiDataException {
@@ -153,5 +98,9 @@ public class Runner {
         // moderately loud (velocity = 93).
         myMsg.setMessage(ShortMessage.NOTE_ON, 0, note, 93);
         receiver.send(myMsg, timeStamp);
+    }
+
+    public static void main(final String[] args) {
+        new Runner(args);
     }
 }
