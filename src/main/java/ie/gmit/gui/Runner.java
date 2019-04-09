@@ -2,14 +2,22 @@ package ie.gmit.gui;
 
 import javax.sound.midi.*;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 public class Runner {
     private static int oldNote = 0;
     //The start note which allocates to the first key
-    private final int startNote = 59;
+    private int startNote = 59;
+    //The distance to detect the fingers between. Its is -detectRange <> detectRange
+    private int detectRange = 175;
+    //The number of keys on the piano
+    private int numberOfKeys = 12;
     private Receiver midiReceiver;
+
 
     /**
      * Sets up a midi receiver and the leap motion key tap
@@ -17,6 +25,9 @@ public class Runner {
      * @param args
      */
     private Runner(final String[] args) {
+        //Initialise piano properties
+        this.setPropertiesFromArgs(args);
+
         final MidiDevice.Info[] midiDeviceInfo = MidiSystem.getMidiDeviceInfo();
         MidiDevice midiDevice;
         this.midiReceiver = null;
@@ -48,7 +59,6 @@ public class Runner {
             System.out.println(e.getMessage());
             System.exit(0);
         }
-
     }
 
     /**
@@ -58,17 +68,17 @@ public class Runner {
      */
     private void setUpOnTapListener() throws IOException {
         //Initialise leap motion
-        final LeapMotionInitialiser lmi = new LeapMotionInitialiser();
+        final LeapMotionInitialiser lmi = new LeapMotionInitialiser(this.detectRange, this.numberOfKeys);
         //Register to key tap
         lmi.onKeyTap((pos) -> {
             //Get the key tapped
             final int key = lmi.whichKey(pos.getX());
-            if (key > 0 && key < lmi.getNumberOfKeys()) {
+            if (key > 0 && key < this.numberOfKeys) {
                 try {
                     //Play sound
                     Runner.sendMessage(this.midiReceiver, key + this.startNote);
                 } catch (final InvalidMidiDataException e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 System.out.println("Key tapped: " + key);
             }
@@ -102,5 +112,26 @@ public class Runner {
 
     public static void main(final String[] args) {
         new Runner(args);
+    }
+
+    /**
+     * Checks if the args array contains arguments.
+     * If it does then sets the argument to be the provided one
+     *
+     * @param args
+     */
+    private void setPropertiesFromArgs(final String[] args) {
+        final Map<String, Consumer<Integer>> possibleArgs = new HashMap<>();
+        possibleArgs.put("-r", (n) -> this.detectRange = n);
+        possibleArgs.put("-s", (n) -> this.startNote = n);
+        possibleArgs.put("-k", (n) -> this.numberOfKeys = n);
+        for (int i = 0; i < args.length; i++) {
+            try {
+                //Try to parse the parameter to int and call the consumer
+                possibleArgs.get(args[i]).accept(Integer.valueOf(args[++i]));
+            } catch (final Exception ignored) {
+                //This will catch null consumer, invalid number format and index out of bounds
+            }
+        }
     }
 }

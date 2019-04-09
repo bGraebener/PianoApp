@@ -3,7 +3,6 @@ package ie.gmit.gui;
 import com.leapmotion.leap.Controller;
 import com.leapmotion.leap.Vector;
 
-import javax.sound.midi.InvalidMidiDataException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -13,11 +12,18 @@ public class LeapMotionInitialiser {
     private final Controller c;
     private final LeapMotionListener l;
     //The distance to detect the fingers between. Its is -detectRange <> detectRange
-    private int detectRange = 175;
+    private final int detectRange;
     //The number of keys on the piano
-    private int numberOfKeys = 12;
+    private final int numberOfKeys;
 
-    public LeapMotionInitialiser() throws IOException {
+    /**
+     * Loads the native libraries for leap motion and initialises the listener
+     *
+     * @param detectRange
+     * @param numberOfKeys
+     * @throws IOException
+     */
+    public LeapMotionInitialiser(final int detectRange, final int numberOfKeys) throws IOException {
         //Load leap motion native files
         if (NativeLibraryLoader.loadNativeFiles()) {
             //if (NativeLibrary.loadSystem("native")) {
@@ -25,23 +31,27 @@ public class LeapMotionInitialiser {
             this.l = new LeapMotionListener();
             this.c.addListener(this.l);
             this.c.removeListener(this.l);
+            this.detectRange = detectRange;
+            this.numberOfKeys = numberOfKeys;
         } else {
             throw new IOException("Leap Native is not loaded");
         }
     }
 
-
-    public LeapMotionInitialiser(final int detectRange, final int numberOfKeys) throws IOException {
-        this();
-        this.detectRange = detectRange;
-        this.numberOfKeys = numberOfKeys;
-
-    }
-
+    /**
+     * Registers a listener to key tap event
+     *
+     * @param c
+     */
     public void onKeyTap(final Consumer<? extends Vector> c) {
         this.l.onKeyTap(c);
     }
 
+    /**
+     * Registers a listener to finger move event
+     *
+     * @param c
+     */
     public void onFingerMove(final Consumer<? extends Map<Character, List<Vector>>> c) {
         this.l.onFingerMove(c);
     }
@@ -70,21 +80,5 @@ public class LeapMotionInitialiser {
             }
         }
         return -1;
-    }
-
-    public int getDetectRange() {
-        return this.detectRange;
-    }
-
-    public void setDetectRange(final int detectRange) {
-        this.detectRange = detectRange;
-    }
-
-    public int getNumberOfKeys() {
-        return this.numberOfKeys;
-    }
-
-    public void setNumberOfKeys(final int numberOfKeys) {
-        this.numberOfKeys = numberOfKeys;
     }
 }
