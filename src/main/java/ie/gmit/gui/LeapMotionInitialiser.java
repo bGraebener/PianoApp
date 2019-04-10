@@ -9,6 +9,14 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 public class LeapMotionInitialiser {
+    Controller getC() {
+        return this.c;
+    }
+
+    LeapMotionListener getL() {
+        return this.l;
+    }
+
     private final Controller c;
     private final LeapMotionListener l;
     //The distance to detect the fingers between. Its is -detectRange <> detectRange
@@ -23,14 +31,13 @@ public class LeapMotionInitialiser {
      * @param numberOfKeys
      * @throws IOException
      */
-    public LeapMotionInitialiser(final int detectRange, final int numberOfKeys) throws IOException {
+    LeapMotionInitialiser(final int detectRange, final int numberOfKeys) throws IOException {
         //Load leap motion native files
         if (NativeLibraryLoader.loadNativeFiles()) {
             //if (NativeLibrary.loadSystem("native")) {
             this.c = new Controller();
             this.l = new LeapMotionListener();
             this.c.addListener(this.l);
-            this.c.removeListener(this.l);
             this.detectRange = detectRange;
             this.numberOfKeys = numberOfKeys;
         } else {
@@ -43,7 +50,7 @@ public class LeapMotionInitialiser {
      *
      * @param c
      */
-    public void onKeyTap(final Consumer<? extends Vector> c) {
+    void onKeyTap(final Consumer<? extends Vector> c) {
         this.l.onKeyTap(c);
     }
 
@@ -64,7 +71,7 @@ public class LeapMotionInitialiser {
      * @param x
      * @return
      */
-    public int whichKey(final float x) {
+    int whichKey(final float x) {
         final int keyWidth = this.detectRange * 2 / this.numberOfKeys;
         int baseX = -this.detectRange;
         int i = 1;
