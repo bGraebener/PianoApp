@@ -30,7 +30,6 @@ public class LeapMotionInitialiser {
             this.c = new Controller();
             this.l = new LeapMotionListener();
             this.c.addListener(this.l);
-            this.c.removeListener(this.l);
             this.detectRange = detectRange;
             this.numberOfKeys = numberOfKeys;
         } else {
@@ -80,5 +79,19 @@ public class LeapMotionInitialiser {
             }
         }
         return -1;
+    }
+
+    /**
+     * @return The leap motion controller
+     */
+    public Controller getC() {
+        return this.c;
+    }
+
+    /**
+     * @return The leap motion listener
+     */
+    public LeapMotionListener getL() {
+        return this.l;
     }
 }

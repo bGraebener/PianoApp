@@ -17,7 +17,7 @@ public class Runner {
     //The number of keys on the piano
     private int numberOfKeys = 12;
     private Receiver midiReceiver;
-
+    private LeapMotionInitialiser lmi;
 
     /**
      * Sets up a midi receiver and the leap motion key tap
@@ -59,6 +59,13 @@ public class Runner {
             System.out.println(e.getMessage());
             System.exit(0);
         }
+        try {
+            System.in.read();
+            this.lmi.getC().removeListener(this.lmi.getL());
+        } catch (final Exception e) {
+            e.printStackTrace();
+
+        }
     }
 
     /**
@@ -68,12 +75,12 @@ public class Runner {
      */
     private void setUpOnTapListener() throws IOException {
         //Initialise leap motion
-        final LeapMotionInitialiser lmi = new LeapMotionInitialiser(this.detectRange, this.numberOfKeys);
+        this.lmi = new LeapMotionInitialiser(this.detectRange, this.numberOfKeys);
         //Register to key tap
-        lmi.onKeyTap((pos) -> {
+        this.lmi.onKeyTap((pos) -> {
             //Get the key tapped
-            final int key = lmi.whichKey(pos.getX());
-            if (key > 0 && key < this.numberOfKeys) {
+            final int key = this.lmi.whichKey(pos.getX());
+            if (key > 0 && key <= this.numberOfKeys) {
                 try {
                     //Play sound
                     Runner.sendMessage(this.midiReceiver, key + this.startNote);
