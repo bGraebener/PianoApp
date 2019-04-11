@@ -9,13 +9,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 public class LeapMotionInitialiser {
-    Controller getC() {
-        return this.c;
-    }
 
-    LeapMotionListener getL() {
-        return this.l;
-    }
 
     private final Controller c;
     private final LeapMotionListener l;
@@ -87,5 +81,19 @@ public class LeapMotionInitialiser {
             }
         }
         return -1;
+    }
+
+    /**
+     * @return The leap motion controller
+     */
+    public Controller getC() {
+        return this.c;
+    }
+
+    /**
+     * @return The leap motion listener
+     */
+    public LeapMotionListener getL() {
+        return this.l;
     }
 }
