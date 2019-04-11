@@ -15,13 +15,8 @@ public class MidiController {
     //    the midi receiver that receives the midi message
     private Receiver midiReceiver;
 
-    //    the previously played note, used to turn the note off after one second
-    private int oldNote;
-
     public MidiController() {
-
         this.getMidiReceiver();
-
     }
 
     /**
@@ -36,20 +31,6 @@ public class MidiController {
         final ShortMessage myMsg = new ShortMessage();
         final long timeStamp = -1;
 
-        final ExecutorService service = Executors.newFixedThreadPool(1);
-        service.submit(() -> {
-
-            try {
-                Thread.sleep(1000);
-                //stop old note from playing
-                myMsg.setMessage(ShortMessage.NOTE_OFF, 0, this.oldNote, 0);
-                this.midiReceiver.send(myMsg, timeStamp);
-                this.oldNote = note;
-            } catch (final InterruptedException | InvalidMidiDataException e) {
-                e.printStackTrace();
-            }
-        });
-
         // moderately loud (velocity = 93).
         try {
             myMsg.setMessage(ShortMessage.NOTE_ON, 0, note, 93);
@@ -58,6 +39,19 @@ public class MidiController {
             System.err.println(e.getMessage());
         }
         this.midiReceiver.send(myMsg, timeStamp);
+
+//        turn the note off after one second of playing
+        final ExecutorService service = Executors.newFixedThreadPool(1);
+        service.submit(() -> {
+            try {
+                Thread.sleep(1000);
+                //stop old note from playing
+                myMsg.setMessage(ShortMessage.NOTE_OFF, 0, note, 0);
+                this.midiReceiver.send(myMsg, timeStamp);
+            } catch (final InterruptedException | InvalidMidiDataException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     /**
@@ -80,11 +74,12 @@ public class MidiController {
                     midiDevice = MidiSystem.getMidiDevice(i);
                     midiDevice.open();
                     this.midiReceiver = midiDevice.getReceiver();
-                } catch (final MidiUnavailableException e) {
-                    System.err.println("Could not get Midi Receiver");
-                    System.err.println(e.getMessage());
+                } catch (final MidiUnavailableException ignored) {
                 }
             }
+        }
+        if (midiReceiver == null) {
+            System.err.println("Could not get Midi Receiver");
         }
     }
 }
