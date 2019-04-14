@@ -57,11 +57,24 @@ The sending of the 'Note On' and 'Note Off' messages is done in the sendMessage(
 A MIDI message is created from the note value that was passed and a moderate velocity of 93 was set. That message
 is then send to the MIDI receiver. 
 
-In a second step a new thread is created and that thread is put to sleep for one second. After the second of pausing
+In a second step a new thread is created and that thread is put to sleep for one second. After a second of pausing,
 a MIDI 'Note Off' message is send to the receiver to signal the virtual instrument that the key was released.
 
+All messages are send to the MIDI channel 1.
+ 
+### 2.2 The virtual Instrument
+For the application that receives the MIDI messages and plays the actual sounds, we used the free 
+[__Virtual MIDI Piano Keyboard__](http://vmpk.sourceforge.net/) application to test the LEAP Motion MIDI controller application. 
 
-### 2.2 MIDI specific Issues 
+In the MIDI settings the channel was set to 1. As the MIDI 'In Driver' the 'PianoApp' driver was selected. The MIDI 'Out
+Driver' was set to the 'Windows Wavetable Synth' driver. 
+
+The application is not restricted to work with only this virtual instrument. Any virtual instrument application or 
+VST plugin can be used to produce sound. The virtual instrument must listen on channel 1 and being able to recognise
+the 'PianoApp' MIDI driver. The application was also tested with the commercial application 
+[__EzKeys__](https://www.toontrack.com/ezkeys-line/) and worked as expected.
+
+### 2.3 MIDI specific Issues 
 With the LEAP Motion controller there is no way of specifying when to stop playing a key, since there is no 
 'finger-released' event hook only a 'finger-tap' event. To signal the virtual instrument that a note has ended, 
 a 'MIDI Note Off' message has to be send. 
