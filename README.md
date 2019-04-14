@@ -1,6 +1,8 @@
 # PianoApp
 >Title: Piano Application using LEAP Motion  
-Team: Krisztián Nagy, Bastian Graebener
+Team: Krisztián Nagy, Bastian Graebener  
+Module: Gesture Based UI Development  
+Lecturer: Damien Costello  
 
 ## 1. Introduction
 
@@ -17,19 +19,39 @@ This readme explains the architecture of the application and discusses strengths
 
 ## 2. MIDI
 MIDI is an abbreviation for Musical Instrument Digital Interface. MIDI is a data transfer protocol commonly used for
-connecting computers with electronic musical or audio devices. [1]
-    
+connecting computers with electronic musical or audio devices. [1]    
 
-In order for the LEAP Motion controller to be used as a MIDI device a MIDI driver is needed. The MIDI drivers enable an
-operating system to recognise a device as a device able to send and receive data using the MIDI protocol.  
-The MIDI driver is used to route the data between devices and applications [2].
+In order for the LEAP Motion controller to be used as a MIDI device a MIDI driver is needed. MIDI drivers enable an
+operating system to recognise a device as being able to send and receive data using the MIDI protocol.  
+The MIDI driver is then used to route the data between devices and applications [2].
 
 Real MIDI interfaces like MIDI keyboards, drums or other MIDI controllers come with a driver specific to the controller 
 provided by the manufacturer. 
  
 Since the LEAP Motion controller was not intended to be used as a MIDI controller and therefore does not provide a 
 MIDI driver, a solution had to be found to enable the operating system and applications like a virtual instrument
- to recognise the LEAP Motion controller as a device capable of sending MIDI data.    
+to recognise the LEAP Motion controller as a device capable of sending MIDI data.  
+
+The application [**loopMidi**](https://www.tobias-erichsen.de/software/loopmidi.html) creates a virtual MIDI driver that
+can be used by applications to communicate using the MIDI protocol.  This virtual MIDI driver can be targeted by both, the 
+application that sends MIDI data and by the virtual MIDI instrument that receives MIDI data. A virtual MIDI port called 
+__'PianoApp'__  is created in **loopMidi**. 
+
+There are several different types of messages that can be send over MIDI. For the purpose of this application, only
+'Note On' and 'Note Off' messages were used. [3] 'Note On' and 'Note Off' events consist both of three bytes. The first byte
+is called header byte and contains the MIDI channel number. The last two bytes are the so-called data-bytes. The first 
+data-byte is the key-number. The last byte is the velocity which specifies the force a note was played.
+
+### 2.1 MIDI in the application
+The application was written in Java using the language version 8. The Java core library has good support for working
+with MIDI.    
+The first step in the application is to search the for the MIDI driver in the system with the name '__PianoApp'__. Once
+the application found the driver, it attempts to open it and retrieve the MIDI receiver. The MIDI receiver is used to send 
+'MIDI Note On' events.
+
+### 2.2 Issues
+With the LEAP Motion controller there was no way off specifying when to stop playing a key, since there is no 
+'key-released' event hook.  For this application we hard-coded a value of 
 
 ## Technologies used:
     1. LEAP Motion controller
@@ -52,3 +74,4 @@ It is not easy to find documentation how to set up a java project and where to g
 ## References
 1. [MIDI Standard](https://www.midi.org/specifications)
 1. [MIDI Driver](https://www.sweetwater.com/insync/midi-driver/)
+1. [MIDI Note On, Note Off](http://tonalsoft.com/pub/pitch-bend/pitch.2005-08-31.17-00.aspx)
