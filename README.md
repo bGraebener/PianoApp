@@ -140,7 +140,7 @@ The sweipe descute could be implemented to use to shift the octets on the piano.
 1. Run `java -jar pianoapp-1.0-SNAPSHOT-jar-with-dependencies.jar`
 1. The aaplication will write out _Connected_ on successful run. The key taps are detected until the application is terminated
 
-### 6.1 Ruunning parameters
+### 6.1 Running parameters
 * `-r` denottes the range detected. Default is 150. The range is always duplicated. Therefore 150 will detect 300px.
 * `-k` denotes the number of the keys. Default is 12.
 * `-s` denotes the start key for the virtual piano. Default is 59
