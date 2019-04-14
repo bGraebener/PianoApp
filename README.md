@@ -38,20 +38,42 @@ application that sends MIDI data and by the virtual MIDI instrument that receive
 __'PianoApp'__  is created in **loopMidi**. 
 
 There are several different types of messages that can be send over MIDI. For the purpose of this application, only
-'Note On' and 'Note Off' messages were used. [3] 'Note On' and 'Note Off' events consist both of three bytes. The first byte
+'Note On' and 'Note Off' messages were used [3]. 'Note On' and 'Note Off' events consist both of three bytes. The first byte
 is called header byte and contains the MIDI channel number. The last two bytes are the so-called data-bytes. The first 
-data-byte is the key-number. The last byte is the velocity which specifies the force a note was played.
+data-byte is the key-number, i.e the number of the note to be played. The last byte is the velocity which specifies 
+the force a note was played.
 
 ### 2.1 MIDI in the application
 The application was written in Java using the language version 8. The Java core library has good support for working
-with MIDI.    
-The first step in the application is to search the for the MIDI driver in the system with the name '__PianoApp'__. Once
-the application found the driver, it attempts to open it and retrieve the MIDI receiver. The MIDI receiver is used to send 
+with MIDI [4].
+
+The MidiController class handles all MIDI related operations. 
+
+The first step in the initialisation is to search the for the MIDI driver in the system with the name '__PianoApp'__. Once
+the application found the driver, it attempts to open it and retrieve the MIDI receiver from it. The MIDI receiver is used to send 
 'MIDI Note On' events.
 
-### 2.2 Issues
-With the LEAP Motion controller there was no way off specifying when to stop playing a key, since there is no 
-'key-released' event hook.  For this application we hard-coded a value of 
+The sending of the 'Note On' and 'Note Off' messages is done in the sendMessage() method of the MidiController class.
+A MIDI message is created from the note value that was passed and a moderate velocity of 93 was set. That message
+is then send to the MIDI receiver. 
+
+In a second step a new thread is created and that thread is put to sleep for one second. After the second of pausing
+a MIDI 'Note Off' message is send to the receiver to signal the virtual instrument that the key was released.
+
+
+### 2.2 MIDI specific Issues 
+With the LEAP Motion controller there is no way of specifying when to stop playing a key, since there is no 
+'finger-released' event hook only a 'finger-tap' event. To signal the virtual instrument that a note has ended, 
+a 'MIDI Note Off' message has to be send. 
+
+For this application we hard-coded a value of one second for all note's duration. The turning off of a note is done on a
+different thread which is put to sleep for a second and then sends a MIDI 'Note Off' message to the receiver. This is
+done to allow the user to keep pressing keys while another note is still playing.
+
+Another problem we encountered, was using the LEAP Motion controller to register the velocity of a 'finger-tap' event which
+could have been used to set the velocity in the MIDI message. There is no easy way to track fingers on the z-axis and 
+the speed in which the finger moved. To counter this issue,  we hard-coded a moderate velocity for all 'Note On' events 
+with the value of 93.
 
 ## Technologies used:
     1. LEAP Motion controller
@@ -73,5 +95,6 @@ It is not easy to find documentation how to set up a java project and where to g
 
 ## References
 1. [MIDI Standard](https://www.midi.org/specifications)
-1. [MIDI Driver](https://www.sweetwater.com/insync/midi-driver/)
-1. [MIDI Note On, Note Off](http://tonalsoft.com/pub/pitch-bend/pitch.2005-08-31.17-00.aspx)
+1. [MIDI Driver Explanation](https://www.sweetwater.com/insync/midi-driver/)
+1. [MIDI Note On, Note Off Messages](http://tonalsoft.com/pub/pitch-bend/pitch.2005-08-31.17-00.aspx)
+1. [Java Midi Package](https://docs.oracle.com/javase/tutorial/sound/overview-MIDI.html)

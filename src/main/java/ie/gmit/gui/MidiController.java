@@ -8,7 +8,6 @@ import java.util.concurrent.Executors;
  * Class that handles all midi related actions.
  * <p>
  * There must be a midi driver called 'PianoApp' installed on the executing system for the application to work.
- * The
  */
 public class MidiController {
 
@@ -31,7 +30,7 @@ public class MidiController {
         final ShortMessage myMsg = new ShortMessage();
         final long timeStamp = -1;
 
-        // moderately loud (velocity = 93).
+        // hard-coded a moderate velocity of 93 because there is no way of tracking speed of finger movement
         try {
             myMsg.setMessage(ShortMessage.NOTE_ON, 0, note, 93);
         } catch (final InvalidMidiDataException e) {
@@ -78,7 +77,7 @@ public class MidiController {
                 }
             }
         }
-        if (midiReceiver == null) {
+        if (this.midiReceiver == null) {
             System.err.println("Could not get Midi Receiver");
         }
     }
