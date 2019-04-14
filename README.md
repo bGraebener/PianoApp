@@ -3,6 +3,7 @@
 Team: Krisztián Nagy, Bastian Graebener  
 Module: Gesture Based UI Development  
 Lecturer: Damien Costello  
+[Video:](https://drive.google.com/file/d/10eEI6MD_D3n8gAhEU9okkaMCSaRAwmZa/view?usp=sharing)
 
 ## 1. Introduction
 
